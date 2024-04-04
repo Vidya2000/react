@@ -41,7 +41,7 @@ function App({ onSearch }) {
     <div style={{ 
       display: 'flex', 
       alignItems: 'center',
-      backgroundColor: 'Linen', // Set light color as background
+      backgroundColor: 'Snow', // Set light color as background
       minHeight: '100vh', // Ensure the background covers the entire viewport height
       padding: '20px' // Add padding for better layout
     }}>
