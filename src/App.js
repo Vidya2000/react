@@ -1,35 +1,83 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Input, Button, Switch, Dropdown, Menu } from 'antd';
 import { HeartOutlined, NotificationOutlined, CommentOutlined, AppstoreOutlined, UserOutlined, QuestionCircleOutlined, DownOutlined } from '@ant-design/icons';
-import axios from 'axios';
 import darkBackground from './Dark.jpg';
 import lightBackground from './rainbow.jpg';
+import styled from 'styled-components';
 
 const { Search } = Input;
 
+const SearchResultsContainer = styled.div`
+  position: absolute;
+  top: 52%;
+  left: 44%;
+  transform: translateX(-50%);
+  padding: 1.5px;
+  width: 50%;
+  z-index: 999;
+  transition: display 0.3s;
+  margin-top: 10px;
+
+`;
+
+const SearchResultItem = styled.div`
+  p {
+    line-height: 1; 
+  }
+`;
+
+const NoResultsMessage = styled.div`
+  top: 52%;
+  left: 44%;
+  font-size: 1.2rem;
+  color: #666;
+  margin-top: 20px;
+`;
+
+const SearchResults = ({ results, hasSearched }) => {
+  return (
+    <SearchResultsContainer>
+      {hasSearched && results.length === 0 ? (
+        <NoResultsMessage>No results found</NoResultsMessage>
+      ) : results.length > 0 ? (
+        results.map((result, index) => (
+          <SearchResultItem key={index}>
+            <p>{result.result}</p>
+          </SearchResultItem>
+        ))
+      ) : null}
+    </SearchResultsContainer>
+  );
+};
+
 function App() {
   const [searchValue, setSearchValue] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
   const [showButtons, setShowButtons] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
-    const fetchSearchResults = async () => {
-      try {
-        const response = await axios.post('http://127.0.0.1:5000/perform_search', {
-          search_input: searchValue,
-        });
-        setSearchResults(response.data);
-      } catch (error) {
-        console.error('Error fetching search results:', error);
-      }
-    };
+    console.log('Search Results:', searchResults);
+  }, [searchResults]);
 
-    fetchSearchResults();
-  }, [searchValue]);
+  const handleSearch = async () => {
+    try {
+      setHasSearched(false); // Set hasSearched to false before performing the search(to avoid displaying no results found)
+      const response = await axios.get(`http://127.0.0.1:5000/perform_search?search_input=${searchValue}`);
+      const data = response.data;
+      setSearchResults(data);
+      setHasSearched(true); // Set hasSearched to true after receiving search results(to dispaly results)
+      console.log('Fetched Data:', data);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+  
 
-  const handleSearch = (value) => {
-    setSearchValue(value);
+  const handleChange = (e) => {
+    setSearchValue(e.target.value);
   };
 
   const handleToggleButtons = () => {
@@ -37,23 +85,31 @@ function App() {
   };
 
   const handleSave = () => {
-    // Logic for saving
     console.log('Saved!');
   };
 
-  const handleReset = () => {
-    // Logic for resetting
-    console.log('Reset!');
+  const handleReset = async () => {
+    try {
+      // Clears input fields
+      setSearchValue('');
+      // Reset state variables
+      setShowButtons(false);
+      setDarkMode(false);
+      setSearchResults([]);
+      setHasSearched(false);
+      // Reload the page
+      window.location.reload();
+    } catch (error) {
+      console.error('Error resetting website:', error);
+    }
   };
 
   const handleRemove = () => {
-    // Logic for removing
     console.log('Remove!');
   };
 
   const handleModeChange = (checked) => {
     setDarkMode(checked);
-    // You can add logic here to switch between dark mode and light mode
   };
 
   const menu = (
@@ -90,40 +146,15 @@ function App() {
         color: darkMode ? '#fff' : '#333',
       }}
     >
-      <div
-        style={{
-          position: 'fixed',
-          bottom: '10px',
-          left: '10px',
-          zIndex: '999',
-          backgroundColor: 'blue',
-          padding: '5px',
-          borderRadius: '5px',
-        }}
-      >
+      <div style={{ position: 'fixed', bottom: '10px', left: '10px', zIndex: '999', backgroundColor: 'blue', padding: '5px', borderRadius: '5px' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '10px', color: 'white' }}>Dark Mode</span>
           <Switch checked={darkMode} onChange={handleModeChange} />
         </div>
       </div>
-      <div
-        style={{
-          position: 'fixed',
-          top: '10px',
-          left: '10px',
-          zIndex: '999',
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
-        <img
-          src={require('./logo.png')}
-          alt="SearchTool Logo"
-          style={{ width: '50px', marginRight: '5px' }}
-        />
-        <span style={{ fontWeight: 'bold', fontSize: '1.5rem', marginRight: '5px' }}>
-          SearchTool
-        </span>
+      <div style={{ position: 'fixed', top: '10px', left: '10px', zIndex: '999', display: 'flex', alignItems: 'center' }}>
+        <img src={require('./logo.png')} alt="SearchTool Logo" style={{ width: '50px', marginRight: '5px' }} />
+        <span style={{ fontWeight: 'bold', fontSize: '1.5rem', marginRight: '5px' }}>SearchTool</span>
         <Dropdown overlay={menu} placement="bottomLeft" trigger={['click']}>
           <Button type="primary" style={{ marginRight: '10px' }}>
             <DownOutlined />
@@ -139,26 +170,15 @@ function App() {
           allowClear
           enterButton="Search"
           value={searchValue}
-          onChange={(e) => handleSearch(e.target.value)}
-          onSearch={(value) => handleSearch(value)}
+          onChange={handleChange}
+          onSearch={handleSearch}
           style={{ marginLeft: '250px', flex: '1', maxWidth: '1200px' }}
         />
-        <Button
-          type="primary"
-          onClick={handleToggleButtons}
-          style={{ marginLeft: '5px', marginTop: '1px' }}
-        >
+        <Button type="primary" onClick={handleToggleButtons} style={{ marginLeft: '5px', marginTop: '1px' }}>
           {showButtons ? '-' : '+'}
         </Button>
         {showButtons && (
-          <div
-            style={{
-              marginLeft: '10px',
-              marginTop: '50px',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
+          <div style={{ marginLeft: '10px', marginTop: '50px', display: 'flex', flexDirection: 'column' }}>
             <Button type="default" onClick={handleSave}>
               Save
             </Button>
@@ -171,19 +191,7 @@ function App() {
           </div>
         )}
       </div>
-      {searchResults.length > 0 && (
-        <div style={{ marginTop: '20px' }}>
-          <h3>Search Results:</h3>
-          <ul>
-            {searchResults.map((result) => (
-              <li key={result.id}>
-                {result.result} (Query: {result.query}, State: {result.state}, Updated:{' '}
-                {new Date(result.updated).toLocaleString()})
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <SearchResults results={searchResults} hasSearched={hasSearched} />
     </div>
   );
 }
