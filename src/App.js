@@ -5,6 +5,7 @@ import { HeartOutlined, NotificationOutlined, CommentOutlined, AppstoreOutlined,
 import darkBackground from './Dark.jpg';
 import lightBackground from './rainbow.jpg';
 import styled from 'styled-components';
+import { message } from 'antd';
 
 const { Search } = Input;
 
@@ -35,7 +36,7 @@ const NoResultsMessage = styled.div`
   margin-top: 20px;
 `;
 
-const SearchResults = ({ results, hasSearched }) => {
+const SearchResults = ({ results, hasSearched, handleResultCheckbox }) => {
   return (
     <SearchResultsContainer>
       {hasSearched && results.length === 0 ? (
@@ -43,7 +44,13 @@ const SearchResults = ({ results, hasSearched }) => {
       ) : results.length > 0 ? (
         results.map((result, index) => (
           <SearchResultItem key={index}>
-            <p>{result.result}</p>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                onChange={() => handleResultCheckbox(result)}
+              />
+              <p>{result.result}</p>
+            </div>
           </SearchResultItem>
         ))
       ) : null}
@@ -57,6 +64,7 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedResults, setSelectedResults] = useState([]);
 
   useEffect(() => {
     console.log('Search Results:', searchResults);
@@ -104,9 +112,34 @@ function App() {
     }
   };
 
-  const handleRemove = () => {
-    console.log('Remove!');
+  const handleResultCheckbox = (result) => {
+    setSelectedResults((prevSelectedResults) => {
+      if (prevSelectedResults.includes(result)) {
+        return prevSelectedResults.filter((r) => r !== result);
+      } else {
+        return [...prevSelectedResults, result];
+      }
+    });
   };
+
+  const handleRemove = async () => {
+    try {
+      for (const result of selectedResults) {
+        const response = await axios.post('http://127.0.0.1:5000/remove_search', { id: result.id });
+        const data = response.data;
+        if (data.success) {
+          message.success(data.message);
+        } else {
+          message.error(data.message || 'An error occurred while removing the search');
+        }
+      }
+      handleReset();
+    } catch (error) {
+      console.error('Error:', error);
+      message.error('An error occurred while removing the search');
+    }
+  };
+  
 
   const handleModeChange = (checked) => {
     setDarkMode(checked);
@@ -191,7 +224,11 @@ function App() {
           </div>
         )}
       </div>
-      <SearchResults results={searchResults} hasSearched={hasSearched} />
+      <SearchResults
+      results={searchResults}
+      hasSearched={hasSearched}
+      handleResultCheckbox={handleResultCheckbox}
+    />
     </div>
   );
 }
