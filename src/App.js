@@ -274,7 +274,7 @@ function App() {
     />
 
       <Modal
-        title="Insert Row"
+        title="Add Query and Result"
         visible={isInsertModalVisible}
         onOk={handleInsertOk}
         onCancel={handleInsertCancel}
