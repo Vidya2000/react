@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Input, Button, Switch, Dropdown, Menu } from 'antd';
+import { Input, Button, Switch, Dropdown, Menu, Modal } from 'antd';
 import { HeartOutlined, NotificationOutlined, CommentOutlined, AppstoreOutlined, UserOutlined, QuestionCircleOutlined, DownOutlined } from '@ant-design/icons';
 import darkBackground from './Dark.jpg';
 import lightBackground from './rainbow.jpg';
@@ -65,6 +65,9 @@ function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedResults, setSelectedResults] = useState([]);
+  const [isInsertModalVisible, setIsInsertModalVisible] = useState(false);
+  const [insertQuery, setInsertQuery] = useState('');
+  const [insertResult, setInsertResult] = useState('');
 
   useEffect(() => {
     console.log('Search Results:', searchResults);
@@ -145,6 +148,43 @@ function App() {
     setDarkMode(checked);
   };
 
+  const showInsertModal = () => {
+    setIsInsertModalVisible(true);
+  };
+
+  const handleInsertOk = async () => {
+    try {
+      const response = await axios.post('/insert_single_row', {
+        single_row_insert_question: insertQuery,
+        single_row_insert_result: insertResult,
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = response.data;
+      if (data.task === 'successful') {
+        message.success('Row inserted successfully');
+        setInsertQuery('');
+        setInsertResult('');
+        setIsInsertModalVisible(false);
+        // Reload the website
+        window.location.reload();
+      } else {
+        message.error('Failed to insert row');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      message.error('An error occurred while inserting the row');
+    }
+  };
+
+  const handleInsertCancel = () => {
+    setInsertQuery('');
+    setInsertResult('');
+    setIsInsertModalVisible(false);
+  };
+
   const menu = (
     <Menu>
       <Menu.Item key="1" icon={<AppstoreOutlined />}>
@@ -215,6 +255,9 @@ function App() {
             <Button type="default" onClick={handleSave}>
               Save
             </Button>
+            <Button type="default" onClick={showInsertModal}>
+              Insert
+            </Button>
             <Button type="default" onClick={handleReset}>
               Reset
             </Button>
@@ -229,6 +272,25 @@ function App() {
       hasSearched={hasSearched}
       handleResultCheckbox={handleResultCheckbox}
     />
+
+      <Modal
+        title="Insert Row"
+        visible={isInsertModalVisible}
+        onOk={handleInsertOk}
+        onCancel={handleInsertCancel}
+      >
+        <Input
+          placeholder="Enter query"
+          value={insertQuery}
+          onChange={(e) => setInsertQuery(e.target.value)}
+          style={{ marginBottom: '10px' }}
+        />
+        <Input
+          placeholder="Enter result"
+          value={insertResult}
+          onChange={(e) => setInsertResult(e.target.value)}
+        />
+      </Modal>
     </div>
   );
 }
