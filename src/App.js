@@ -68,6 +68,12 @@ function App() {
   const [isInsertModalVisible, setIsInsertModalVisible] = useState(false);
   const [insertQuery, setInsertQuery] = useState('');
   const [insertResult, setInsertResult] = useState('');
+  const [selectedResultForEdit, setSelectedResultForEdit] = useState(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editQuery, setEditQuery] = useState('');
+  const [editResult, setEditResult] = useState('');
+  const [oldQuery, setOldQuery] = useState('');
+  const [resultToUpdate, setResultToUpdate] = useState('');
 
   useEffect(() => {
     console.log('Search Results:', searchResults);
@@ -95,20 +101,67 @@ function App() {
     setShowButtons(!showButtons);
   };
 
+  const showEditModal = () => {
+    if (selectedResultForEdit) {
+      setOldQuery(selectedResultForEdit.query);
+      setEditQuery(selectedResultForEdit.query);
+      setResultToUpdate(selectedResultForEdit.result);
+      setEditResult(selectedResultForEdit.result);
+      setIsEditModalVisible(true);
+    } else {
+      message.warning('Please select a result to edit');
+    }
+  };
+
+  const handleEditOk = async () => {
+    try {
+      const formData = new FormData();
+      formData.append('old_query', oldQuery);
+      formData.append('new_query', editQuery);
+      formData.append('result_to_update', resultToUpdate);
+      formData.append('new_result', editResult);
+  
+      const response = await axios.post('/edit_single_row', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      const data = response.data;
+      console.log('Response data:', data);
+      if (data.task === 'successful') {
+        message.success('Row updated successfully');
+        setOldQuery('');
+        setEditQuery('');
+        setResultToUpdate('');
+        setEditResult('');
+        setIsEditModalVisible(false);
+        window.location.reload();
+      } else {
+        message.error('Failed to update row');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      message.error('An error occurred while updating the row');
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditQuery('');
+    setEditResult('');
+    setIsEditModalVisible(false);
+  };
+
   const handleSave = () => {
-    console.log('Saved!');
+    showEditModal();
   };
 
   const handleReset = async () => {
     try {
-      // Clears input fields
       setSearchValue('');
-      // Reset state variables
       setShowButtons(false);
       setDarkMode(false);
       setSearchResults([]);
       setHasSearched(false);
-      // Reload the page
       window.location.reload();
     } catch (error) {
       console.error('Error resetting website:', error);
@@ -120,6 +173,7 @@ function App() {
       if (prevSelectedResults.includes(result)) {
         return prevSelectedResults.filter((r) => r !== result);
       } else {
+        setSelectedResultForEdit(result);
         return [...prevSelectedResults, result];
       }
     });
@@ -289,6 +343,26 @@ function App() {
           placeholder="Enter result"
           value={insertResult}
           onChange={(e) => setInsertResult(e.target.value)}
+        />
+      </Modal>
+      <Modal
+        title="Edit Query and Result"
+        visible={isEditModalVisible}
+        onOk={handleEditOk}
+        onCancel={handleEditCancel}
+      >
+        <p>Query: {oldQuery}</p>
+        <p>Result: {resultToUpdate}</p>
+        <Input
+          placeholder="Enter new query"
+          value={editQuery}
+          onChange={(e) => setEditQuery(e.target.value)}
+          style={{ marginBottom: '10px' }}
+        />
+        <Input
+          placeholder="Enter new result"
+          value={editResult}
+          onChange={(e) => setEditResult(e.target.value)}
         />
       </Modal>
     </div>
