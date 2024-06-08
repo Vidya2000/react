@@ -81,11 +81,11 @@ function App() {
 
   const handleSearch = async () => {
     try {
-      setHasSearched(false); // Set hasSearched to false before performing the search(to avoid displaying no results found)
+      setHasSearched(false);
       const response = await axios.get(`http://127.0.0.1:5000/perform_search?search_input=${searchValue}`);
       const data = response.data;
       setSearchResults(data);
-      setHasSearched(true); // Set hasSearched to true after receiving search results(to dispaly results)
+      setHasSearched(true);
       console.log('Fetched Data:', data);
     } catch (error) {
       console.error('Error:', error);
